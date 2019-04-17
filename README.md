@@ -1,4 +1,4 @@
-# d3m-jion
+# d3m-join
 
 D3M join primitive for data augmentation.
 
