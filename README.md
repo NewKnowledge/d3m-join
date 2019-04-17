@@ -1,11 +1,11 @@
-# distil-fuzzy-join
+# d3m-jion
 
-Placeholder fuzzy join primitive for data augmentation testing.
+D3M join primitive for data augmentation.
 
 Deployment:
 
 ```shell
-pip install -e git+ssh://git@github.com/uncharted-distil/distil-fuzzy-join.git#egg=DistilMIRanking --process-dependency-links
+pip install -e git+ssh://git@github.com/NewKnowledge/d3m-jiongit#egg=DistilMIRanking --process-dependency-links
 ```
 
 Development:
