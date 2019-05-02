@@ -74,7 +74,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             'installation': [{
                 'type': metadata_base.PrimitiveInstallationType.PIP,
                 'package_uri': 'git+https://github.com/NewKnowledge/d3m-join.git@' +
-                               '{git_commit}#egg=d3m-join'
+                               '{git_commit}#egg=D3MJoin'
                                .format(git_commit=d3m_utils.current_git_commit(os.path.dirname(__file__)),),
             }],
             'algorithm_types': [
@@ -120,8 +120,8 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         semantic_types_left = simon_client.produce_metafeatures(inputs = left_df)
         semantic_types_right = simon_client.produce_metafeatures(inputs = right_df)
 
-        print(semantic_types_left)
-        print(semantic_types_right)
+        print(semantic_types_left.value)
+        print(semantic_types_right.value)
 
         # define some hierarchy of columns to check
             # 1. multilabel matches
