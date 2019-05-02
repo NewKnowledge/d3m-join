@@ -32,7 +32,7 @@ from common_primitives import utils
 from fuzzywuzzy import fuzz, process
 from dateutil import parser
 
-__all__ = ('FuzzyJoinPrimitive',)
+__all__ = ('FuzzyJoin',)
 
 Inputs = container.Dataset
 Outputs = container.Dataset
@@ -56,11 +56,11 @@ class Hyperparams(hyperparams.Hyperparams):
     )
 
 
-class FuzzyJoinPrimitive(transformer.TransformerPrimitiveBase[Inputs,
+class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
                                                               Outputs,
                                                               Hyperparams]):
     """
-    Place holder fuzzy join primitive
+    Place holder  join primitive
     """
 
     _STRING_JOIN_TYPES = set(('https://metadata.datadrivendiscovery.org/types/CategoricalData',
@@ -78,8 +78,9 @@ class FuzzyJoinPrimitive(transformer.TransformerPrimitiveBase[Inputs,
         {
             'id': '6c3188bf-322d-4f9b-bb91-68151bf1f17f',
             'version': '0.1.0',
-            'name': 'Fuzzy Join Placeholder',
-            'python_path': 'd3m.primitives.distil.FuzzyJoin',
+            'name': 'Fuzzy Join Primitive',
+            ## TODO: change python path
+            'python_path': 'd3m.primitives.data_transformation.array_concatenation.FuzzyJoin',
             'keywords': ['join', 'columns', 'dataframe'],
             'source': {
                 'name': 'Uncharted Software',
@@ -87,8 +88,8 @@ class FuzzyJoinPrimitive(transformer.TransformerPrimitiveBase[Inputs,
             },
             'installation': [{
                 'type': metadata_base.PrimitiveInstallationType.PIP,
-                'package_uri': 'git+https://github.com/uncharted-distil/distil-fuzzy-join.git@' +
-                               '{git_commit}#egg=distil-fuzzy-join'
+                'package_uri': 'git+https://github.com/NewKnowledge/d3m-join.git@' +
+                               '{git_commit}#egg=D3MJoin'
                                .format(git_commit=d3m_utils.current_git_commit(os.path.dirname(__file__)),),
             }],
             'algorithm_types': [
