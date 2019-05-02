@@ -22,7 +22,7 @@ import pandas as pd
 import numpy as np
 
 from d3m import container
-from d3m.primitives.distil import FuzzyJoin
+from d3m.primitives.data_transformation.array_concatenation import FuzzyJoin
 from d3m.metadata import base as metadata_base
 
 
