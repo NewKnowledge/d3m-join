@@ -4,7 +4,7 @@ setup(
     name='D3MJoin',
     version='0.1.0',
     description='D3M Join Primitive',
-    packages=['d3m-join'],
+    packages=['D3MJoin'],
     keywords=['d3m_primitive'],
     install_requires=[
         'pandas >= 0.22.0',
