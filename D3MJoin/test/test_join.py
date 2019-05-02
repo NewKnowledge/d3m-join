@@ -1,5 +1,6 @@
 import unittest
 from os import path
+import os
 import csv
 import typing
 import pandas as pd
@@ -28,7 +29,9 @@ class JoinPrimitiveTestCase(unittest.TestCase):
                 'accuracy': 0.9,
             }
         )
-        join = Join(hyperparams=hyperparams)
+        volumes = {}
+        volumes['simon_models_1'] = '/d071106b823ab1168879651811dd03b829ab0728ba7622785bb5d3541496c45f'
+        join = Join(hyperparams=hyperparams, volumes = volumes)
         join.produce(left=dataframe_1, right=dataframe_2)
         #result_dataframe = result_dataset['0']
 

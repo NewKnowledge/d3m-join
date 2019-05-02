@@ -116,7 +116,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         # use SIMON to classify columns of both datasets according to semantic type
         hyperparams_class = Simon.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        simon_client = Simon(hyperparams=hyperparams_class.defaults())
+        simon_client = Simon(hyperparams=hyperparams_class.defaults(), volumes = self.volumes)
         semantic_types_left = simon_client.produce_metafeatures(inputs = left_df)
         semantic_types_right = simon_client.produce_metafeatures(inputs = right_df)
 
