@@ -15,8 +15,8 @@ setup(
         ],
     entry_points={
         'd3m.primitives': [
-            'data_transformation.array_concatenation.FuzzyJoin = d3m-join:FuzzyJoin',
-            'data_transformation.array_concatenation.Join = d3m-join:Join'
+            'data_transformation.array_concatenation.FuzzyJoin = D3MJoin.fuzzy_join:FuzzyJoin',
+            'data_transformation.array_concatenation.Join = D3MJoin.join:Join'
         ],
     }
 )
