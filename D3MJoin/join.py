@@ -193,7 +193,6 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             search_types = [(val1, val2) for val1 in first_order_types for val2 in second_order_types]
         for val1, val2 in search_types:
             logging.debug('Checking for match on semantic types {} and {}'.format(val1, val2))
-            utils.get_tabular_resource(left, None)
             left_types = left_df.metadata.get_columns_with_semantic_type(val1)
             right_types = right_df.metadata.get_columns_with_semantic_type(val2)
             matches = [match for match in itertools.product(left_types, right_types)]
