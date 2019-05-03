@@ -26,6 +26,10 @@ from d3m.primitive_interfaces import base, transformer
 from common_primitives import utils
 
 from d3m.primitives.data_cleaning.column_type_profiler import Simon
+from d3m.primitives.data_transformation.array_concatenation import FuzzyJoin
+import logging
+import itertools
+logging.basicConfig(level=logging.DEBUG)
 
 __all__ = ('Join',)
 
@@ -47,6 +51,18 @@ class Hyperparams(hyperparams.Hyperparams):
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description='Sample size for evaluating efficacy of joins, expressed as percentage of size of dataset. \
             Therefore, it ranges from 0.0 to 1.0, where 1.0 would sample the whole dataset.'
+    )
+    greedy_search = hyperparams.UniformBool(
+        default = False, 
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        description="whether to check all semantic types for best column match, or return first column match \
+            above threshold"
+    )
+    threshold = hyperparams.Hyperparameter[float](
+        default=0.5,
+        semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        description='Cut-off for which to return a good join candidate. Expressed as fraction of sampled data set. \
+            Therefore, it ranges from 0.0 to 1.0, where 1.0 be all of the rows in the sampled dataset.'
     )
 
 
@@ -84,9 +100,28 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         }
     )
 
+    _FIRST_ORDER_STRING_TYPES = set(('http://schema.org/addressCountry',
+                        'http://schema.org/Country',
+                        'http://schema.org/City',
+                        'http://schema.org/State',
+                        'http://schema.org/address',
+                        'https://metadata.datadrivendiscovery.org/types/FileName',
+                        'http://schema.org/email'))
+    _FIRST_ORDER_NUMERIC_TYPES = set(('http://schema.org/longitude',
+                        'http://schema.org/latitude',
+                        'http://schema.org/postalCode',
+                        'https://metadata.datadrivendiscovery.org/types/AmericanPhoneNumber',
+                        'http://schema.org/DateTime'))    
+    _SECOND_ORDER_STRING_TYPES = set(('https://metadata.datadrivendiscovery.org/types/CategoricalData',
+                        'http://schema.org/Text',
+                        'http://schema.org/Boolean'))
+    _SECOND_ORDER_NUMERIC_TYPES = set(('http://schema.org/Integer',
+                        'http://schema.org/Float'))
+
     def __init__(self, *, hyperparams: Hyperparams, random_seed: int = 0, volumes: typing.Dict[str,str]=None)-> None:
         super().__init__(hyperparams=hyperparams, random_seed=random_seed, volumes=volumes)
 
+        self.random_seed = random_seed
         self.volumes = volumes
 
     def produce(self, *,
@@ -117,46 +152,97 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         # use SIMON to classify columns of both datasets according to semantic type
         hyperparams_class = Simon.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
         simon_client = Simon(hyperparams=hyperparams_class.defaults(), volumes = self.volumes)
-        semantic_types_left = simon_client.produce_metafeatures(inputs = left_df)
-        semantic_types_right = simon_client.produce_metafeatures(inputs = right_df)
-
-        print(semantic_types_left.value)
-        print(semantic_types_right.value)
-
-        # define some hierarchy of columns to check
-            # 1. multilabel matches
-            # 2. matches for interesting columns (country, city, etc.) maybe interesting cols should be supplied by user??
-            # 3. matches for interesting columns with boring columns (country - text)
         
-        # for each column check:
-            # 1. evaluate join using sample_size + fuzzy_join primitive
-            # 2. if number of records > threshold, return these columns as match, otherwise continue
-            # ** how is threshold defined? HP - what should default be?
+        logging.debug('Computing semantic types of input datasets with SIMON')
+        semantic_types_left = simon_client.produce(inputs = left_df).value
+        semantic_types_right = simon_client.produce(inputs = right_df).value
 
-        # perform join based on semantic type
-        '''
-        join_type = self._get_join_semantic_type(left, left_resource_id, left_col, right, right_resource_id, right_col)
-        joined: pd.Dataframe = None
-        if join_type in self._STRING_JOIN_TYPES:
-            joined = self._join_string_col(left_df, left_col, right_df, right_col, accuracy)
-        elif join_type in self._NUMERIC_JOIN_TYPES:
-            joined = self._join_numeric_col(left_df, left_col, right_df, right_col, accuracy)
-        elif join_type in self._DATETIME_JOIN_TYPES:
-            joined = self._join_datetime_col(left_df, left_col, right_df, right_col, accuracy)
+        logging.debug('Sampling datasets for faster join computations')
+        semantic_types_left = semantic_types_left.sample(frac=self.hyperparams['sample_size'], random_state = self.random_seed)
+        semantic_types_right = semantic_types_right.sample(frac=self.hyperparams['sample_size'], random_state = self.random_seed)
+
+        logging.debug('Checking for first order semantic types matches')
+        result = self._compare_results( \
+            self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._FIRST_ORDER_STRING_TYPES),
+            self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._FIRST_ORDER_NUMERIC_TYPES))
+        if result is None:
+            logging.debug('Checking for second order semantic types matches')
+            result = self._compare_results( \
+                self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._SECOND_ORDER_STRING_TYPES),
+                self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._SECOND_ORDER_NUMERIC_TYPES))
+        return result
+
+    @classmethod
+    def _evaluate_semantic_types(cls,
+                                 semantic_types_left: container.Dataset,
+                                 semantic_types_right: container.Dataset, 
+                                 first_order_types: typing.Set[str],
+                                 second_order_types: typing.Set[str] = None) -> typing.Tuple[str, str, float]:
+        fuzzy_join_hyperparams_class = FuzzyJoin.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+        best_match = cls.hyperparams['threshold']
+        best_left_col = None
+        best_right_col = None
+
+        if second_order_types is None:
+            search_types = [(val, val) for val in first_order_types]
         else:
-            raise exceptions.InvalidArgumentValueError('join not surpported on type ' + str(join_type))
+            search_types = [(val1, val2) for val1 in first_order_types for val2 in second_order_types]
+        for val1, val2 in search_types:
+            logging.debug('Checking for match on semantic types {} and {}'.format(val1, val2))
+            left_types = semantic_types_left.metadata.get_columns_with_semantic_type(val1)
+            right_types = semantic_types_right.metadata.get_columns_with_semantic_type(val2)
+            matches = [match for match in itertools.product(left_types, right_types)]
+            if len(matches) > 0:
+                logging.debug('Found {} matches on semantic types {} and {}'.format(len(matches), val1, val2))
+                for match in matches:
+                    logging.debug('Attempting fuzzy join on match of column {} from df1 and column {} from df2'.format(match[0], match[1]))
+                    left_col = list(semantic_types_left)[match[0]]
+                    right_col = list(semantic_types_right)[match[1]]
+                    fuzzy_join_hyperparams = fuzzy_join_hyperparams_class.defaults().replace(
+                        {
+                            'left_col': left_col,
+                            'right_col': right_col,
+                            'accuracy': cls.hyperparams['accuracy'],
+                        }
+                    )
+                    fuzzy_join = FuzzyJoin(hyperparams=fuzzy_join_hyperparams)
+                    result_dataset = fuzzy_join.produce(left=semantic_types_left, right=semantic_types_right).value
+                    result_dataframe = result_dataset['0']
 
-        # create a new dataset to hold the joined data
-        resource_map = {}
-        for resource_id, resource in left.items():  # type: ignore
-            if resource_id == left_resource_id:
-                resource_map[resource_id] = joined
-            else:
-                resource_map[resource_id] = resource
-        result_dataset = container.Dataset(resource_map)
+                    join_length = result_dataframe.shape[0]
+                    join_percentage = join_length / semantic_types_left.shape[0]
+                    logging.debug('Fuzzy join created new dataset with {} percent of records (from sampled dataset)'.format(join_percentage*100))
+                    if cls.hyperparams['greedy_search']:
+                        logging.debug('Found two first-order columns, {} and {} to join with greedy search'.format(left_col, right_col))
+                        if join_percentage > cls.hyperparams['threshold']:
+                            return(left_col, right_col, best_match)
+                    else:
+                        if join_percentage > best_match:
+                            best_match = join_percentage
+                            best_left_col = left_col
+                            best_right_col = right_col
+        if best_match > cls.hyperparams['threshold']:
+            logging.debug('Found two first-order columns, {} and {} to join with non-greedy search'.format(best_left_col, best_right_col))
+            return(best_left_col, best_right_col, best_match)
+        return None
 
-        return base.CallResult(result_dataset)
-        '''
+    @classmethod
+    def _compare_results(cls, 
+                         string_results: typing.Tuple[str, str, float] = None, 
+                         numeric_results: typing.Tuple[str, str, float] = None) -> typing.Tuple[str, str]:
+        col1_strings, col2_strings, best_match_strings = string_results
+        col1_numeric, col2_numeric, best_match_numeric = numeric_results
+        if col1_strings is None and col1_numeric is None:
+            return None
+        elif col1_numeric is None: 
+            return (col1_strings, col2_strings)
+        elif col1_strings is None:
+            return (col1_numeric, col2_numeric)
+        elif best_match_numeric > best_match_strings:
+            return (col1_numeric, col2_numeric)
+        else:
+            return (col1_strings, col2_strings)
+
     def multi_produce(self, *,
                       produce_methods: typing.Sequence[str],
                       left: Inputs, right: Inputs,  # type: ignore
