@@ -171,8 +171,8 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         if result is None:
             logging.debug('Checking for second order semantic types matches')
             result = self._compare_results( \
-                self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._SECOND_ORDER_STRING_TYPES),
-                self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._SECOND_ORDER_NUMERIC_TYPES))
+                self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._FIRST_ORDER_STRING_TYPES, self._SECOND_ORDER_STRING_TYPES),
+                self._evaluate_semantic_types(semantic_types_left, semantic_types_right,  self._FIRST_ORDER_NUMERIC_TYPES, self._SECOND_ORDER_NUMERIC_TYPES))
         return result
 
     def _evaluate_semantic_types(self,
@@ -181,6 +181,8 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                                  first_order_types: typing.Set[str],
                                  second_order_types: typing.Set[str] = None) -> typing.Tuple[str, str, float]:
         fuzzy_join_hyperparams_class = FuzzyJoin.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+        _, left_df = utils.get_tabular_resource(semantic_types_left, None)
+        _, right_df = utils.get_tabular_resource(semantic_types_right, None)
         best_match = self.hyperparams['threshold']
         best_left_col = None
         best_right_col = None
@@ -191,15 +193,16 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             search_types = [(val1, val2) for val1 in first_order_types for val2 in second_order_types]
         for val1, val2 in search_types:
             logging.debug('Checking for match on semantic types {} and {}'.format(val1, val2))
-            left_types = semantic_types_left.metadata.get_columns_with_semantic_type(val1)
-            right_types = semantic_types_right.metadata.get_columns_with_semantic_type(val2)
+            utils.get_tabular_resource(left, None)
+            left_types = left_df.metadata.get_columns_with_semantic_type(val1)
+            right_types = right_df.metadata.get_columns_with_semantic_type(val2)
             matches = [match for match in itertools.product(left_types, right_types)]
             if len(matches) > 0:
                 logging.debug('Found {} matches on semantic types {} and {}'.format(len(matches), val1, val2))
                 for match in matches:
                     logging.debug('Attempting fuzzy join on match of column {} from df1 and column {} from df2'.format(match[0], match[1]))
-                    left_col = list(semantic_types_left)[match[0]]
-                    right_col = list(semantic_types_right)[match[1]]
+                    left_col = list(left_df)[match[0]]
+                    right_col = list(right_df)[match[1]]
                     fuzzy_join_hyperparams = fuzzy_join_hyperparams_class.defaults().replace(
                         {
                             'left_col': left_col,
@@ -212,7 +215,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                     result_dataframe = result_dataset['0']
 
                     join_length = result_dataframe.shape[0]
-                    join_percentage = join_length / semantic_types_left.shape[0]
+                    join_percentage = join_length / left_df.shape[0]
                     logging.debug('Fuzzy join created new dataset with {} percent of records (from sampled dataset)'.format(join_percentage*100))
                     if self.hyperparams['greedy_search']:
                         logging.debug('Found two first-order columns, {} and {} to join with greedy search'.format(left_col, right_col))
