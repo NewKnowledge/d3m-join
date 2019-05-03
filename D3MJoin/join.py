@@ -324,8 +324,8 @@ if __name__ == '__main__':
     _dataset_path_1 = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test/dataset_1'))
     _dataset_path_2 = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test/dataset_2'))
 
-    dataframe_1 = _load_data(self._dataset_path_1)
-    dataframe_2 = _load_data(self._dataset_path_2)
+    dataframe_1 = _load_data(_dataset_path_1)
+    dataframe_2 = _load_data(_dataset_path_2)
 
     hyperparams_class = Join.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
     hyperparams = hyperparams_class.defaults().replace(
