@@ -22,7 +22,6 @@ class JoinPrimitiveTestCase(unittest.TestCase):
 
         hyperparams_class = \
             Join.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        hyperparams = hyperparams_class.defaults()
         hyperparams = hyperparams_class.defaults().replace(
             {
                 'sample_size': 0.1,
