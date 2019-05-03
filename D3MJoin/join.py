@@ -266,26 +266,6 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                                        right=right)
 
 if __name__ == '__main__':
-    _dataset_path_1 = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test/dataset_1'))
-    _dataset_path_2 = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test/dataset_2'))
-
-    dataframe_1 = _load_data(self._dataset_path_1)
-    dataframe_2 = _load_data(self._dataset_path_2)
-
-    hyperparams_class = Join.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-    hyperparams = hyperparams_class.defaults().replace(
-        {
-            'sample_size': 0.1,
-            'accuracy': 0.9,
-        }
-    )
-    volumes = {}
-    volumes['simon_models_1'] = '/d071106b823ab1168879651811dd03b829ab0728ba7622785bb5d3541496c45f'
-    join = Join(hyperparams=hyperparams, volumes = volumes)
-    col1, col2 = join.produce(left=dataframe_1, right=dataframe_2)
-    print(col1)
-    print(col2)
-
     def _load_data(dataset_path: str) -> container.DataFrame:
         dataset_doc_path = os.path.join(dataset_path, 'datasetDoc.json')
 
@@ -340,3 +320,23 @@ if __name__ == '__main__':
         dataset['0'] = dataframe
 
         return dataset
+
+    _dataset_path_1 = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test/dataset_1'))
+    _dataset_path_2 = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test/dataset_2'))
+
+    dataframe_1 = _load_data(self._dataset_path_1)
+    dataframe_2 = _load_data(self._dataset_path_2)
+
+    hyperparams_class = Join.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    hyperparams = hyperparams_class.defaults().replace(
+        {
+            'sample_size': 0.1,
+            'accuracy': 0.9,
+        }
+    )
+    volumes = {}
+    volumes['simon_models_1'] = '/d071106b823ab1168879651811dd03b829ab0728ba7622785bb5d3541496c45f'
+    join = Join(hyperparams=hyperparams, volumes = volumes)
+    col1, col2 = join.produce(left=dataframe_1, right=dataframe_2)
+    print(col1)
+    print(col2)
