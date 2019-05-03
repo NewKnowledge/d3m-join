@@ -135,7 +135,6 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             left_resource_id, left_df = utils.get_tabular_resource(left, None)
         except ValueError as error:
             raise exceptions.InvalidArgumentValueError("Failure to find tabular resource in left dataset") from error
-
         try:
             right_resource_id, right_df = utils.get_tabular_resource(right, None)
         except ValueError as error:
@@ -151,7 +150,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         # use SIMON to classify columns of both datasets according to semantic type
         hyperparams_class = Simon.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        simon_client = Simon(hyperparams=hyperparams_class.defaults(), volumes = self.volumes)
+        simon_client = Simon(hyperparams=hyperparams_class.defaults().replace({'overwrite': True}), volumes = self.volumes)
         
         logging.debug('Computing semantic types of input datasets with SIMON')
         semantic_types_left = simon_client.produce(inputs = left_df).value
@@ -160,6 +159,10 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         logging.debug('Sampling datasets for faster join computations')
         semantic_types_left = semantic_types_left.sample(frac=self.hyperparams['sample_size'], random_state = self.random_seed)
         semantic_types_right = semantic_types_right.sample(frac=self.hyperparams['sample_size'], random_state = self.random_seed)
+
+        logging.debug('Adding resource ids back to processed dataset')
+        semantic_types_left = container.Dataset({'resource_id':semantic_types_left})
+        semantic_types_right = container.Dataset({'resource_id':semantic_types_right})
 
         logging.debug('Checking for first order semantic types matches')
         result = self._compare_results( \
