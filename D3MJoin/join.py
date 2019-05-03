@@ -232,11 +232,11 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
     def _compare_results(cls, 
                          string_results: typing.Tuple[str, str, float] = None, 
                          numeric_results: typing.Tuple[str, str, float] = None) -> typing.Tuple[str, str]:
+        if string_results is None and numeric_results is None:
+            return None
         col1_strings, col2_strings, best_match_strings = string_results
         col1_numeric, col2_numeric, best_match_numeric = numeric_results
-        if col1_strings is None and col1_numeric is None:
-            return None
-        elif col1_numeric is None: 
+        if col1_numeric is None: 
             return (col1_strings, col2_strings)
         elif col1_strings is None:
             return (col1_numeric, col2_numeric)
