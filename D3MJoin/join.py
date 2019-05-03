@@ -172,14 +172,13 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                 self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._SECOND_ORDER_NUMERIC_TYPES))
         return result
 
-    @classmethod
-    def _evaluate_semantic_types(cls,
+    def _evaluate_semantic_types(self,
                                  semantic_types_left: container.Dataset,
                                  semantic_types_right: container.Dataset, 
                                  first_order_types: typing.Set[str],
                                  second_order_types: typing.Set[str] = None) -> typing.Tuple[str, str, float]:
         fuzzy_join_hyperparams_class = FuzzyJoin.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-        best_match = cls.hyperparams['threshold']
+        best_match = self.hyperparams['threshold']
         best_left_col = None
         best_right_col = None
 
@@ -202,7 +201,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                         {
                             'left_col': left_col,
                             'right_col': right_col,
-                            'accuracy': cls.hyperparams['accuracy'],
+                            'accuracy': self.hyperparams['accuracy'],
                         }
                     )
                     fuzzy_join = FuzzyJoin(hyperparams=fuzzy_join_hyperparams)
@@ -212,16 +211,16 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                     join_length = result_dataframe.shape[0]
                     join_percentage = join_length / semantic_types_left.shape[0]
                     logging.debug('Fuzzy join created new dataset with {} percent of records (from sampled dataset)'.format(join_percentage*100))
-                    if cls.hyperparams['greedy_search']:
+                    if self.hyperparams['greedy_search']:
                         logging.debug('Found two first-order columns, {} and {} to join with greedy search'.format(left_col, right_col))
-                        if join_percentage > cls.hyperparams['threshold']:
+                        if join_percentage > self.hyperparams['threshold']:
                             return(left_col, right_col, best_match)
                     else:
                         if join_percentage > best_match:
                             best_match = join_percentage
                             best_left_col = left_col
                             best_right_col = right_col
-        if best_match > cls.hyperparams['threshold']:
+        if best_match > self.hyperparams['threshold']:
             logging.debug('Found two first-order columns, {} and {} to join with non-greedy search'.format(best_left_col, best_right_col))
             return(best_left_col, best_right_col, best_match)
         return None
