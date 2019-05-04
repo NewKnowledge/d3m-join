@@ -200,11 +200,11 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
 
     @classmethod
     def _get_column_semantic_type(cls,
-                                  dataset: container.pandas.DataFrame,
+                                  df: container.pandas.DataFrame,
                                   col_name: str) -> typing.Set[str]:
-        for col_idx in range(dataset.shape[0]):
-            col_metadata = dataset.metadata.query_column(col_idx)   
-            print(col_metadta)         
+        for col_idx in range(df.shape[1]):
+            col_metadata = df.metadata.query_column(col_idx)   
+            print(col_metadata)         
             if col_metadata.get('name', "") == col_name:
                 return set(col_metadata.get('semantic_types', ()))
         return set()
