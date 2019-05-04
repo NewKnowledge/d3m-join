@@ -124,7 +124,7 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
         right_col = self.hyperparams['right_col']
 
         # perform join based on semantic type
-        join_type = self._get_join_semantic_type(left, left_resource_id, left_col, right, right_resource_id, right_col)
+        join_type = self._get_join_semantic_type(left_df, left_col, right_df, right_col)
         joined: pd.Dataframe = None
         if join_type in self._STRING_JOIN_TYPES:
             joined = self._join_string_col(left_df, left_col, right_df, right_col, accuracy)
@@ -170,15 +170,13 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
 
     @classmethod
     def _get_join_semantic_type(cls,
-                                left: container.Dataset,
-                                left_resource_id: str,
+                                left_df: container.pandas.DataFrame,
                                 left_col: str,
-                                right: container.Dataset,
-                                right_resource_id: str,
+                                right_df: container.pandas.DataFrame,
                                 right_col: str) -> typing.Optional[str]:
         # get semantic types for left and right cols
-        left_types = cls._get_column_semantic_type(left, left_resource_id, left_col)
-        right_types = cls._get_column_semantic_type(right, right_resource_id, right_col)
+        left_types = cls._get_column_semantic_type(left_df, left_col)
+        right_types = cls._get_column_semantic_type(right_df, right_col)
         
         # extract supported types
         supported_left_types = left_types.intersection(cls._SUPPORTED_TYPES)
@@ -202,11 +200,11 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
 
     @classmethod
     def _get_column_semantic_type(cls,
-                                  dataset: container.Dataset,
-                                  resource_id: str,
+                                  dataset: container.pandas.DataFrame,
                                   col_name: str) -> typing.Set[str]:
-        for col_idx in range(dataset.metadata.query((resource_id, metadata_base.ALL_ELEMENTS))['dimension']['length']):
-            col_metadata = dataset.metadata.query((resource_id, metadata_base.ALL_ELEMENTS, col_idx))            
+        for col_idx in range(dataset.shape[0]):
+            col_metadata = dataset.metadata.query_column(col_idx)   
+            print(col_metadta)         
             if col_metadata.get('name', "") == col_name:
                 return set(col_metadata.get('semantic_types', ()))
         return set()

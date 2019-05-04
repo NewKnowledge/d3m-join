@@ -162,11 +162,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
         logging.debug('Adding resource metadata back to processed dataset')
         semantic_types_left = container.Dataset({'resource_id':semantic_types_left})
-        semantic_types_left.metadata = semantic_types_left.metadata.update(semantic_types_left.metadata.query((semantic_types_left, metadata_base.ALL_ELEMENTS)), \
-            left.metadata.query((left_resource_id, metadata_base.ALL_ELEMENTS)))
         semantic_types_right = container.Dataset({'resource_id':semantic_types_right})
-        semantic_types_right.metadata = semantic_types_right.metadata.update(semantic_types_right.metadata.query((semantic_types_right, metadata_base.ALL_ELEMENTS)), \
-            right.metadata.query((right_resource_id, metadata_base.ALL_ELEMENTS)))
 
         logging.debug('Checking for first order semantic types matches')
         result = self._compare_results( \
