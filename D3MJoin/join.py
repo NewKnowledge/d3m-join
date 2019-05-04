@@ -111,7 +111,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                         'http://schema.org/latitude',
                         'http://schema.org/postalCode',
                         'https://metadata.datadrivendiscovery.org/types/AmericanPhoneNumber'))   
-    _FIRST_ORDER_DATETIME_TYPES = set(('http://schema.org/DateTime'))
+    _FIRST_ORDER_DATETIME_TYPES = set(('http://schema.org/DateTime',))
     _SECOND_ORDER_STRING_TYPES = set(('https://metadata.datadrivendiscovery.org/types/CategoricalData',
                         'http://schema.org/Text',
                         'http://schema.org/Boolean'))
@@ -174,6 +174,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             result = self._compare_results( \
                 self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._FIRST_ORDER_STRING_TYPES, self._SECOND_ORDER_STRING_TYPES),
                 self._evaluate_semantic_types(semantic_types_left, semantic_types_right,  self._FIRST_ORDER_NUMERIC_TYPES, self._SECOND_ORDER_NUMERIC_TYPES))
+        logging.debug('Found columns: {} as best potential join'.format(result))
         return result
 
     def _evaluate_semantic_types(self,
