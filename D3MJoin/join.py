@@ -110,8 +110,8 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
     _FIRST_ORDER_NUMERIC_TYPES = set(('http://schema.org/longitude',
                         'http://schema.org/latitude',
                         'http://schema.org/postalCode',
-                        'https://metadata.datadrivendiscovery.org/types/AmericanPhoneNumber',
-                        'http://schema.org/DateTime'))    
+                        'https://metadata.datadrivendiscovery.org/types/AmericanPhoneNumber'))   
+    _FIRST_ORDER_DATETIME_TYPES = set(('http://schema.org/DateTime'))
     _SECOND_ORDER_STRING_TYPES = set(('https://metadata.datadrivendiscovery.org/types/CategoricalData',
                         'http://schema.org/Text',
                         'http://schema.org/Boolean'))
@@ -156,7 +156,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         semantic_types_left = simon_client.produce(inputs = left_df).value
         semantic_types_right = simon_client.produce(inputs = right_df).value
 
-        logging.debug('Sampling datasets for faster join computations')
+        logging.debug('Sampling datasets (sample size = {}) for faster join computations'.format(self.hyperparams['sample_size']))
         semantic_types_left = semantic_types_left.sample(frac=self.hyperparams['sample_size'], random_state = self.random_seed)
         semantic_types_right = semantic_types_right.sample(frac=self.hyperparams['sample_size'], random_state = self.random_seed)
 
@@ -165,9 +165,10 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
         semantic_types_right = container.Dataset({'resource_id':semantic_types_right})
 
         logging.debug('Checking for first order semantic types matches')
-        result = self._compare_results( \
+        result = self._compare_first_order_results( \
             self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._FIRST_ORDER_STRING_TYPES),
-            self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._FIRST_ORDER_NUMERIC_TYPES))
+            self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._FIRST_ORDER_NUMERIC_TYPES),
+            self._evaluate_semantic_types(semantic_types_left, semantic_types_right, self._FIRST_ORDER_DATETIME_TYPES))
         if result is None:
             logging.debug('Checking for second order semantic types matches')
             result = self._compare_results( \
@@ -211,14 +212,14 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                     )
                     fuzzy_join = FuzzyJoin(hyperparams=fuzzy_join_hyperparams)
                     result_dataset = fuzzy_join.produce(left=semantic_types_left, right=semantic_types_right).value
-                    result_dataframe = result_dataset['0']
+                    result_dataframe = result_dataset['resource_id']
 
                     join_length = result_dataframe.shape[0]
                     join_percentage = join_length / left_df.shape[0]
                     logging.debug('Fuzzy join created new dataset with {} percent of records (from sampled dataset)'.format(join_percentage*100))
                     if self.hyperparams['greedy_search']:
-                        logging.debug('Found two first-order columns, {} and {} to join with greedy search'.format(left_col, right_col))
                         if join_percentage > self.hyperparams['threshold']:
+                            logging.debug('Found two first-order columns, {} and {} to join with greedy search'.format(left_col, right_col))
                             return(left_col, right_col, best_match)
                     else:
                         if join_percentage > best_match:
@@ -229,6 +230,46 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             logging.debug('Found two first-order columns, {} and {} to join with non-greedy search'.format(best_left_col, best_right_col))
             return(best_left_col, best_right_col, best_match)
         return None
+
+    @classmethod
+    def _compare_first_order_results(cls, 
+                         string_results: typing.Tuple[str, str, float] = None, 
+                         numeric_results: typing.Tuple[str, str, float] = None,
+                         datetime_results: typing.Tuple[str, str, float] = None) -> typing.Tuple[str, str]:
+        if string_results is None and numeric_results is None and datetime_results is None:
+            return None
+        
+        #col1_strings, col2_strings, best_match_strings = string_results
+        #col1_numeric, col2_numeric, best_match_numeric = numeric_results
+        if string_results is None and datetime_results is None: 
+            return (numeric_results[0], numeric_results[1])
+        elif numeric_results is None and datetime_results is None: 
+            return (string_results[0], string_results[1])
+        elif string_results is None and datetime_results is None: 
+            return (datetime_results[0], datetime_results[1])
+        elif string_results is None:
+            if max(numeric_results[2], datetime_results[2]) == numeric_results[2]:
+                return (numeric_results[0], numeric_results[1])
+            else:
+                return (datetime_results[0], datetime_results[1])
+        elif numeric_results is None:
+            if max(string_results[2], datetime_results[2]) == string_results[2]:
+                return (string_results[0], string_results[1])
+            else:
+                return (datetime_results[0], datetime_results[1])
+        elif datetime_results is None:
+            if max(string_results[2], numeric_results[2]) == numeric_results[2]:
+                return (numeric_results[0], numeric_results[1])
+            else:
+                return (string_results[0], string_results[1])
+        else:
+            best = max(string_results[2], numeric_results[2], datetime_results[2])
+            if best == string_results[2]:
+                return (string_results[0], string_results[1])
+            elif best == string_results[2]:
+                return (string_results[0], string_results[1])
+            else:
+                return (datetime_results[0], datetime_results[1])
 
     @classmethod
     def _compare_results(cls, 
