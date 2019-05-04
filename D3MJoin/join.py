@@ -246,7 +246,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
             return (numeric_results[0], numeric_results[1])
         elif numeric_results is None and datetime_results is None: 
             return (string_results[0], string_results[1])
-        elif string_results is None and datetime_results is None: 
+        elif string_results is None and numeric_results is None: 
             return (datetime_results[0], datetime_results[1])
         elif string_results is None:
             if max(numeric_results[2], datetime_results[2]) == numeric_results[2]:
