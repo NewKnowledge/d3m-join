@@ -202,8 +202,8 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                 logging.debug('Found {} matches on semantic types {} and {}'.format(len(matches), val1, val2))
                 for match in matches:
                     logging.debug('Attempting fuzzy join on match of column {} from df1 and column {} from df2'.format(match[0], match[1]))
-                    left_col = list(left_df)[match[0]]
-                    right_col = list(right_df)[match[1]]
+                    left_col = match[0]
+                    right_col = match[1]
                     fuzzy_join_hyperparams = fuzzy_join_hyperparams_class.defaults().replace(
                         {
                             'left_col': left_col,
@@ -218,6 +218,8 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                     join_length = result_dataframe.shape[0]
                     join_percentage = join_length / left_df.shape[0]
                     logging.debug('Fuzzy join created new dataset with {} percent of records (from sampled dataset)'.format(join_percentage*100))
+                    left_col = list(left_df)[left_col]
+                    right_col = list(right_df)[right_col]
                     if self.hyperparams['greedy_search']:
                         if join_percentage > self.hyperparams['threshold']:
                             logging.debug('Found two first-order columns, {} and {} to join with greedy search'.format(left_col, right_col))
@@ -228,8 +230,8 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                             best_left_col = left_col
                             best_right_col = right_col
         if best_match > self.hyperparams['threshold']:
-            logging.debug('Found two first-order columns, {} and {} to join with non-greedy search'.format(best_left_col, best_right_col))
-            return(best_left_col, best_right_col, best_match)
+            logging.debug('Found two first-order columns, {} and {} to join with non-greedy search'.format(best_left_col, right_col))
+            return(best_left_col, right_col, best_match)
         return None
 
     @classmethod

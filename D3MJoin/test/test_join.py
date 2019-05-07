@@ -10,7 +10,6 @@ from d3m import container
 from d3m.primitives.data_transformation.array_concatenation import Join
 from d3m.metadata import base as metadata_base
 
-
 class JoinPrimitiveTestCase(unittest.TestCase):
 
     _dataset_path_1 = path.abspath(path.join(path.dirname(__file__), 'dataset_1'))

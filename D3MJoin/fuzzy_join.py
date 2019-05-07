@@ -39,15 +39,15 @@ Outputs = container.Dataset
 
 
 class Hyperparams(hyperparams.Hyperparams):
-    left_col = hyperparams.Hyperparameter[str](
-        default="",
+    left_col = hyperparams.Hyperparameter[int](
+        default=0,
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-        description='Name of left join column.'
+        description='Index of left join column.'
     )
-    right_col = hyperparams.Hyperparameter[str](
-        default="",
+    right_col = hyperparams.Hyperparameter[int](
+        default=0,
         semantic_types=['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-        description='Name of right join column.'
+        description='Index of right join column.'
     )
     accuracy = hyperparams.Hyperparameter[float](
         default=0.0,
@@ -171,9 +171,9 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
     @classmethod
     def _get_join_semantic_type(cls,
                                 left_df: container.pandas.DataFrame,
-                                left_col: str,
+                                left_col: int,
                                 right_df: container.pandas.DataFrame,
-                                right_col: str) -> typing.Optional[str]:
+                                right_col: int) -> typing.Optional[str]:
         # get semantic types for left and right cols
         left_types = cls._get_column_semantic_type(left_df, left_col)
         right_types = cls._get_column_semantic_type(right_df, right_col)
@@ -201,12 +201,9 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
     @classmethod
     def _get_column_semantic_type(cls,
                                   df: container.pandas.DataFrame,
-                                  col_name: str) -> typing.Set[str]:
-        for col_idx in range(df.shape[1]):
-            col_metadata = df.metadata.query_column(col_idx)   
-            if col_metadata.get('name', "") == col_name:
-                return set(col_metadata.get('semantic_types', ()))
-        return set()
+                                  index: int) -> typing.Set[str]:
+        col_metadata = df.metadata.query_column(index)   
+        return set(col_metadata.get('semantic_types', ()))
 
     @classmethod
     def _string_fuzzy_match(cls,
@@ -222,12 +219,14 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
     @classmethod
     def _join_string_col(cls,
                          left_df: container.DataFrame,
-                         left_col: str,
+                         left_col: int,
                          right_df: container.DataFrame,
-                         right_col: str,
+                         right_col: int,
                          accuracy: float) -> pd.DataFrame:
         # use d3mIndex from left col if present
         right_df = right_df.drop(columns='d3mIndex')
+        left_col = list(left_df)[left_col]
+        right_col = list(left_df)[right_col]
 
         # pre-compute fuzzy matches
         left_keys = left_df[left_col].unique()
@@ -274,12 +273,14 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
     @classmethod
     def _join_numeric_col(cls,
                           left_df: container.DataFrame,
-                          left_col: str,
+                          left_col: int,
                           right_df: container.DataFrame,
-                          right_col: str,
+                          right_col: int,
                           accuracy: float) -> pd.DataFrame:
         # use d3mIndex from left col if present
         right_df = right_df.drop(columns='d3mIndex')
+        left_col = list(left_df)[left_col]
+        right_col = list(left_df)[right_col]
 
         # fuzzy match each of the left join col against the right join col value and save the results as the left
         # dataframe index
@@ -307,13 +308,15 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
     @classmethod
     def _join_datetime_col(cls,
                            left_df: container.DataFrame,
-                           left_col: str,
+                           left_col: int,
                            right_df: container.DataFrame,
-                           right_col: str,
+                           right_col: int,
                            accuracy: float) -> pd.DataFrame:
         # use d3mIndex from left col if present
         right_df = right_df.drop(columns='d3mIndex')
-
+        left_col = list(left_df)[left_col]
+        right_col = list(left_df)[right_col]
+        
         # compute a tolerance delta for time matching based on a percentage of the minimum left/right time
         # range
         choices = np.array([np.datetime64(parser.parse(dt)) for dt in right_df[right_col].unique()])
