@@ -226,7 +226,7 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
         # use d3mIndex from left col if present
         right_df = right_df.drop(columns='d3mIndex')
         left_col = list(left_df)[left_col]
-        right_col = list(left_df)[right_col]
+        right_col = list(right_df)[right_col]
 
         # pre-compute fuzzy matches
         left_keys = left_df[left_col].unique()
@@ -280,7 +280,7 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
         # use d3mIndex from left col if present
         right_df = right_df.drop(columns='d3mIndex')
         left_col = list(left_df)[left_col]
-        right_col = list(left_df)[right_col]
+        right_col = list(right_df)[right_col]
 
         # fuzzy match each of the left join col against the right join col value and save the results as the left
         # dataframe index
@@ -315,8 +315,8 @@ class FuzzyJoin(transformer.TransformerPrimitiveBase[Inputs,
         # use d3mIndex from left col if present
         right_df = right_df.drop(columns='d3mIndex')
         left_col = list(left_df)[left_col]
-        right_col = list(left_df)[right_col]
-        
+        right_col = list(right_df)[right_col]
+
         # compute a tolerance delta for time matching based on a percentage of the minimum left/right time
         # range
         choices = np.array([np.datetime64(parser.parse(dt)) for dt in right_df[right_col].unique()])
