@@ -310,3 +310,13 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                                        iterations=iterations,
                                        left=left,
                                        right=right)
+
+if __name__ == '__main__':
+    
+    # test case
+    acled_dataset = container.Dataset.load('file:///datasets/seed_datasets_current/LL0_acled_reduced/TRAIN/dataset_TRAIN/datasetDoc.json')
+    world_bank_dataset = container.Dataset.load('file:///datasets/seed_datasets_current/world_bank_2018/TRAIN/dataset_TRAIN/datasetDoc.json')
+    join_hp = Join.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+    join = Join(hyperparams = join_hp.defaults().replace({}))
+    df = join.produce(left = acled_dataset, right = world_bank_dataset).value
+    print(df)
