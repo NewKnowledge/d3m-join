@@ -16,7 +16,7 @@ class JoinPrimitiveTestCase(unittest.TestCase):
     _dataset_path_1 = path.abspath(path.join(path.dirname(__file__), 'dataset_1'))
     _dataset_path_2 = path.abspath(path.join(path.dirname(__file__), 'dataset_2'))
 
-    def test_string_join(self) -> None:
+    def test_join(self) -> None:
         dataframe_1 = self._load_data(self._dataset_path_1)
         dataframe_2 = self._load_data(self._dataset_path_2)
 
@@ -32,19 +32,16 @@ class JoinPrimitiveTestCase(unittest.TestCase):
         volumes['simon_models_1'] = '/d071106b823ab1168879651811dd03b829ab0728ba7622785bb5d3541496c45f'
         join = Join(hyperparams=hyperparams, volumes = volumes)
         join.produce(left=dataframe_1, right=dataframe_2)
-        #result_dataframe = result_dataset['0']
 
-        # verify the output
-        '''
-        self.assertListEqual(list(result_dataframe), ['d3mIndex', 'alpha', 'bravo', 'whiskey', 
-                                                      'sierra', 'charlie', 'xray', 'tango'])
-        self.assertListEqual(list(result_dataframe['d3mIndex']), [1, 2, 3, 4, 5, 7, 8])
-        self.assertListEqual(list(result_dataframe['alpha']),
-                             ['yankee', 'yankeee', 'yank', 'Hotel', 'hotel', 'foxtrot aa', 'foxtrot'])
-        self.assertListEqual(list(result_dataframe['bravo']), [1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 8.0])
-        self.assertListEqual(list(result_dataframe['charlie']),
-                             [100.0, 100.0, 100.0, 200.0, 200.0, 300.0, 300.0])
-        '''
+    def test_full_join(self) -> None:
+        acled_dataset = container.Dataset.load('file:///datasets/seed_datasets_current/LL0_acled_reduced/TRAIN/dataset_TRAIN/datasetDoc.json')
+        world_bank_dataset = container.Dataset.load('file:///datasets/seed_datasets_current/world_bank_2018/TRAIN/dataset_TRAIN/datasetDoc.json')
+        join_hp = Join.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+        volumes = {}
+        volumes['simon_models_1'] = '/d071106b823ab1168879651811dd03b829ab0728ba7622785bb5d3541496c45f'
+        join = Join(hyperparams = join_hp.defaults().replace({}), volumes=volumes)
+        join.produce(left = acled_dataset, right = world_bank_dataset)
+
     def _load_data(cls, dataset_path: str) -> container.DataFrame:
         dataset_doc_path = path.join(dataset_path, 'datasetDoc.json')
 
