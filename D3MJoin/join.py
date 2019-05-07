@@ -217,7 +217,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
 
                     join_length = result_dataframe.shape[0]
                     join_percentage = join_length / left_df.shape[0]
-                    logging.debug('Fuzzy join created new dataset with {} percent of records (from sampled dataset)'.format(join_percentage*100))
+                    logging.debug('Fuzzy join created new dataset with {} records ({} percent)'.format(join_length, join_percentage*100))
                     left_col = list(left_df)[left_col]
                     right_col = list(right_df)[right_col]
                     if self.hyperparams['greedy_search']:
@@ -231,7 +231,7 @@ class Join(transformer.TransformerPrimitiveBase[Inputs, Outputs, Hyperparams]):
                             best_right_col = right_col
         if best_match > self.hyperparams['threshold']:
             logging.debug('Found two first-order columns, {} and {} to join with non-greedy search'.format(best_left_col, right_col))
-            return(best_left_col, right_col, best_match)
+            return(best_left_col, best_right_col, best_match)
         return None
 
     @classmethod
